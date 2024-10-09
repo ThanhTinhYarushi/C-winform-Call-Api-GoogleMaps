@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Map with GraphHopper Route</title>
+
+    <!-- Import Leaflet.js CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <!-- Import Leaflet.js JavaScript -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <!-- Style cho bản đồ -->
+    <style>
+      #map {
+        height: 500px;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Hiển thị lộ trình trên bản đồ</h2>
+
+    <!-- Div chứa bản đồ -->
+    <div id="map"></div>
+
+    <!-- Nút để hiển thị lộ trình -->
+    <button onclick="showRoute()">Hiển thị lộ trình</button>
+
+    <script>
+      // Tọa độ mặc định cho bản đồ
+      var map = L.map("map").setView([48.858844, 2.294351], 13); // Paris, Eiffel Tower
+
+      // Sử dụng OpenStreetMap tiles
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      }).addTo(map);
+
+      // Hàm gọi GraphHopper API và hiển thị lộ trình
+      function showRoute() {
+        var origin = "48.858844,2.294351"; // Điểm bắt đầu: Eiffel Tower
+        var destination = "48.8566,2.3522"; // Điểm kết thúc: Paris city center
+        var apiKey = "YOUR_GRAPHHOPPER_API_KEY"; // Thay bằng API Key của bạn
+        var url = `https://graphhopper.com/api/1/route?point=${origin}&point=${destination}&vehicle=car&points_encoded=false&key=${apiKey}`;
+
+        fetch(url)
+          .then((response) => response.json())
+          .then((data) => {
+            var path = data.paths[0].points.coordinates;
+
+            // Tạo một mảng các điểm cho tuyến đường
+            var latLngs = path.map((p) => [p[1], p[0]]); // Chuyển từ [lon, lat] sang [lat, lon]
+
+            // Vẽ đường đi trên bản đồ
+            var polyline = L.polyline(latLngs, { color: "blue" }).addTo(map);
+
+            // Di chuyển map tới đoạn đường đã vẽ
+            map.fitBounds(polyline.getBounds());
+
+            // Thêm marker cho điểm bắt đầu và điểm kết thúc
+            L.marker([latLngs[0][0], latLngs[0][1]])
+              .addTo(map)
+              .bindPopup("Điểm bắt đầu")
+              .openPopup();
+            L.marker([
+              latLngs[latLngs.length - 1][0],
+              latLngs[latLngs.length - 1][1],
+            ])
+              .addTo(map)
+              .bindPopup("Điểm kết thúc")
+              .openPopup();
+          })
+          .catch((error) =>
+            console.error("Lỗi khi lấy dữ liệu từ GraphHopper:", error)
+          );
+      }
+    </script>
+  </body>
+</html>
